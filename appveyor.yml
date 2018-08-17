@@ -1,0 +1,35 @@
+image: Visual Studio 2017
+
+environment:
+  ANDROID_HOME: 'C:\Android\android-sdk'
+
+install:
+  - ps: |
+      appveyor DownloadFile "https://dl.google.com/android/repository/sdk-tools-windows-4333796.zip" -FileName "C:\android-tools.zip"
+      7z x "C:\android-tools.zip" -o"$env:ANDROID_HOME" | Out-Null
+      Write-Output "" > ~\.android\repositories.cfg
+      Write-Host "Installing Android packages:"
+      $pkgs = '"build-tools;28.0.2"', '"platforms;android-28"', 'ndk-bundle'
+      foreach ($pkg in $pkgs) {
+        Write-Host "Installing ${pkg}:"
+        echo "y" | & $env:ANDROID_HOME\tools\bin\sdkmanager.bat ${pkg}
+      }
+
+before_deploy:
+  - gradlew.bat assembleRelease
+  - appveyor PushArtifact app\build\outputs\apk\release\app-release-unsigned.apk
+
+deploy:
+  artifact: /.*\.apk/
+  auth_token:
+    secure: J1DFsRUBaJKZ2HqHKOQEA427FUsKo6rDTxtxyUwARP7k0Ac5SgX1qn77+LYXdwk6
+  description: ''
+  on:
+    appveyor_repo_tag: true
+  provider: GitHub
+
+branches:
+  only:
+    - latest
+
+build: false
